@@ -1,5 +1,5 @@
 """Tests for batch extraction orchestration: dedup, tiebreaker, threshold."""
-
+import json
 from datetime import datetime
 from unittest.mock import patch
 
@@ -171,3 +171,57 @@ def test_extraction_timestamp():
     result = BatchResult(input_length=10)
     assert isinstance(result.extracted_at, datetime)
     assert result.input_length == 10
+
+def test_cli_parse_args_threshold():
+    """Test 8: CLI --threshold 0.5 sets threshold correctly."""
+    from thread.extraction.cli import parse_args
+
+    args = parse_args(["--threshold", "0.5"])
+    assert args.threshold == 0.5
+
+
+def test_cli_parse_args_format():
+    """Test 9: CLI --format pretty sets output mode."""
+    from thread.extraction.cli import parse_args
+
+    args = parse_args(["--format", "pretty"])
+    assert args.format == "pretty"
+
+    args2 = parse_args(["--format", "json"])
+    assert args2.format == "json"
+
+
+def test_cli_parse_args_model():
+    """Test 10: CLI --model overrides model name."""
+    from thread.extraction.cli import parse_args
+
+    args = parse_args(["--model", "openrouter:gpt-4o"])
+    assert args.model == "openrouter:gpt-4o"
+
+
+def test_cli_format_output_json():
+    """Test 11: format_output returns valid JSON."""
+    from thread.extraction.cli import format_output
+    from thread.extraction.batch_extractor import BatchResult
+
+    result = BatchResult(input_length=10)
+    output = format_output(result, fmt="json")
+    parsed = json.loads(output)
+    assert "entities" in parsed
+    assert "metadata" in parsed
+    assert parsed["metadata"]["entity_count"] == 0
+    assert parsed["metadata"]["input_length"] == 10
+
+
+def test_cli_format_output_pretty():
+    """Test 12: Pretty format is valid (indented) JSON."""
+    from thread.extraction.cli import format_output
+    from thread.extraction.batch_extractor import BatchResult
+
+    result = BatchResult(input_length=5)
+    output = format_output(result, fmt="pretty")
+    # Pretty JSON has newlines; compact doesn't
+    assert "\n" in output
+    # Validate it parses correctly
+    parsed = json.loads(output)
+    assert parsed["metadata"]["input_length"] == 5
