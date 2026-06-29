@@ -38,6 +38,9 @@ from .models import (
 # Base extraction pipeline
 from .base import AIHarness, BaseExtractor
 
+# Extraction sub-package
+from . import extractors as _extractors
+
 __all__ = [
     "Settings",
     "BaseEntity",
